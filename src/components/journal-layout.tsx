@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useTheme } from 'next-themes';
 import { 
-  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap 
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2 
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
@@ -36,6 +36,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { MarkdownToolbar } from './markdown-toolbar';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -48,6 +54,13 @@ const checklistItems = [
     {id: 'lettura', label: 'Lettura', icon: <BookOpen className="h-4 w-4 text-muted-foreground" />},
 ];
 
+const colorThemes = [
+    { name: 'blue', label: 'Blu', className: 'bg-blue-500' },
+    { name: 'green', label: 'Verde', className: 'bg-green-500' },
+    { name: 'orange', label: 'Arancione', className: 'bg-orange-500' },
+    { name: 'rose', label: 'Rosa', className: 'bg-rose-500' },
+]
+
 export function JournalLayout() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [entry, setEntry] = useState<store.JournalEntry>({ content: '', checklist: [] });
@@ -59,6 +72,17 @@ export function JournalLayout() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
   const { setTheme } = useTheme();
+  const [colorTheme, setColorTheme] = useState('blue');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('color-theme') || 'blue';
+    setColorTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-color-theme', colorTheme)
+    localStorage.setItem('color-theme', colorTheme);
+  }, [colorTheme]);
 
   useEffect(() => {
     const loadedEntry = store.getNote(selectedDate);
@@ -152,6 +176,15 @@ export function JournalLayout() {
     if(e.target) e.target.value = '';
   };
   
+  const handleDeleteNote = (date: Date) => {
+    store.deleteNote(date);
+    setDatesWithNotes(store.getDatesWithNotes());
+    if (format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) {
+        setEntry({ content: '', checklist: [] });
+    }
+    toast({ title: 'Nota cancellata' });
+  };
+
   const calendarModifiers = useMemo(() => ({
       ...datesWithNotes.length > 0 && { hasNote: datesWithNotes },
   }), [datesWithNotes]);
@@ -180,14 +213,33 @@ export function JournalLayout() {
               const isModified = calendarModifiers.hasNote && calendarModifiers.hasNote.some(
                 d => format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
               );
-              return (
-                <div className="relative">
-                  {props.children}
+              
+              const dayContent = (
+                <div className="relative h-full w-full flex items-center justify-center">
+                  {date.getDate()}
                   {isModified && (
                     <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"></div>
                   )}
                 </div>
               );
+
+              if (isModified) {
+                return (
+                  <ContextMenu>
+                    <ContextMenuTrigger className="h-full w-full">
+                      {dayContent}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => handleDeleteNote(date)} className="text-destructive cursor-pointer">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Cancella nota</span>
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              }
+
+              return dayContent;
             },
           }}
         />
@@ -307,6 +359,22 @@ export function JournalLayout() {
                 </DropdownMenuSub>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
+                    <Palette className="mr-2 h-4 w-4" />
+                    <span>Colore Tema</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {colorThemes.map(theme => (
+                        <DropdownMenuItem key={theme.name} onClick={() => setColorTheme(theme.name)}>
+                           <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview, var(--primary)))` }} />
+                          {theme.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
                     <Languages className="mr-2 h-4 w-4" />
                     <span>Lingua</span>
                   </DropdownMenuSubTrigger>
@@ -336,7 +404,7 @@ export function JournalLayout() {
         </header>
         <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
           <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'col-span-2' : '')}>
-             <div className="flex-grow h-0 overflow-y-auto">
+             <div className="flex-1 overflow-y-auto">
               <Textarea
                 ref={textareaRef}
                 value={entry.content}

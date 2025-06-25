@@ -77,6 +77,15 @@ export function saveNote(date: Date, entry: Partial<JournalEntry>) {
   }
 }
 
+export function deleteNote(date: Date) {
+  const notes = getNotesFromStorage();
+  const dateKey = format(date, DATE_FORMAT);
+  if (notes[dateKey]) {
+    delete notes[dateKey];
+    saveNotesToStorage(notes);
+  }
+}
+
 export function getDatesWithNotes(): Date[] {
   const notes = getNotesFromStorage();
   return Object.keys(notes)

@@ -7,6 +7,27 @@ body {
 }
 
 @layer base {
+  html[data-color-theme="blue"] {
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+    --ring: 217.2 91.2% 59.8%;
+  }
+  html[data-color-theme="green"] {
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 142.1 76.2% 96.3%;
+    --ring: 142.1 76.2% 36.3%;
+  }
+  html[data-color-theme="orange"] {
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 24.6 95% 98.1%;
+    --ring: 24.6 95% 53.1%;
+  }
+  html[data-color-theme="rose"] {
+    --primary: 346.8 77.2% 49.8%;
+    --primary-foreground: 346.8 77.2% 97.8%;
+    --ring: 346.8 77.2% 49.8%;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

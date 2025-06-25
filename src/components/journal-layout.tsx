@@ -351,7 +351,7 @@ export function JournalLayout() {
         </aside>
       )}
 
-      <div className="flex flex-col flex-grow">
+      <div className="flex flex-col flex-1">
         <header className="flex items-center justify-between p-2 border-b h-16 flex-shrink-0">
           <div className="flex items-center gap-2">
             {isMobile && (
@@ -460,7 +460,7 @@ export function JournalLayout() {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
           <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
             <MarkdownToolbar 
               textareaRef={textareaRef}

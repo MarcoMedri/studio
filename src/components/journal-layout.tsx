@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { useTheme } from 'next-themes';
 import { 
-  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2 
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
@@ -89,23 +89,24 @@ export function JournalLayout() {
   }, []);
 
   useEffect(() => {
+    if(!isMounted) return;
     document.documentElement.setAttribute('data-color-theme', colorTheme)
     localStorage.setItem('color-theme', colorTheme);
-  }, [colorTheme]);
+  }, [colorTheme, isMounted]);
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && isMounted) {
       const loadedEntry = store.getNote(selectedDate);
       setEntry(loadedEntry);
     }
-  }, [selectedDate]);
+  }, [selectedDate, isMounted]);
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && isMounted) {
       store.saveNote(selectedDate, debouncedEntry);
       setDatesWithNotes(store.getDatesWithNotes());
     }
-  }, [debouncedEntry, selectedDate]);
+  }, [debouncedEntry, selectedDate, isMounted]);
 
   useEffect(() => {
     if (isMobile) setViewMode('editor');
@@ -276,7 +277,7 @@ export function JournalLayout() {
                     <div className="relative h-full w-full flex items-center justify-center">
                       {date.getDate()}
                       {isModified && (
-                        <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"></div>
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary"></div>
                       )}
                     </div>
                   );
@@ -466,7 +467,7 @@ export function JournalLayout() {
           </div>
         </header>
         <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'col-span-2' : '')}>
+          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
             <MarkdownToolbar 
               textareaRef={textareaRef}
               content={entry.content}
@@ -483,7 +484,7 @@ export function JournalLayout() {
               />
             </div>
           </div>
-          <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'col-span-2' : '')}>
+          <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'md:col-span-2' : '')}>
             <MarkdownPreview content={entry.content} />
           </div>
         </main>

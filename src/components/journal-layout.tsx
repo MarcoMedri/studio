@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { 
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap 
+} from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
 import { cn } from '@/lib/utils';
@@ -10,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ThemeToggle } from '@/components/theme-toggle';
 import MarkdownPreview from '@/components/markdown-preview';
 import { AnalyzeButton } from '@/components/analyze-button';
 import {
@@ -18,6 +20,18 @@ import {
   SheetContent,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  DropdownMenuPortal,
+} from '@/components/ui/dropdown-menu';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
@@ -27,11 +41,11 @@ import { MarkdownToolbar } from './markdown-toolbar';
 type ViewMode = 'split' | 'editor' | 'preview';
 
 const checklistItems = [
-    {id: 'alimentazione', label: 'Alimentazione'},
-    {id: 'sonno', label: 'Sonno'},
-    {id: 'esercizio', label: 'Esercizio fisico'},
-    {id: 'studio', label: 'Studio'},
-    {id: 'lettura', label: 'Lettura'},
+    {id: 'alimentazione', label: 'Alimentazione', icon: <Apple className="h-4 w-4 text-muted-foreground" />},
+    {id: 'sonno', label: 'Sonno', icon: <BedDouble className="h-4 w-4 text-muted-foreground" />},
+    {id: 'esercizio', label: 'Esercizio fisico', icon: <Dumbbell className="h-4 w-4 text-muted-foreground" />},
+    {id: 'studio', label: 'Studio', icon: <GraduationCap className="h-4 w-4 text-muted-foreground" />},
+    {id: 'lettura', label: 'Lettura', icon: <BookOpen className="h-4 w-4 text-muted-foreground" />},
 ];
 
 export function JournalLayout() {
@@ -44,6 +58,7 @@ export function JournalLayout() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     const loadedEntry = store.getNote(selectedDate);
@@ -169,7 +184,7 @@ export function JournalLayout() {
                 <div className="relative">
                   {props.children}
                   {isModified && (
-                    <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-accent"></div>
+                    <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"></div>
                   )}
                 </div>
               );
@@ -185,7 +200,7 @@ export function JournalLayout() {
                     onClick={() => handleMoodChange(emoji)}
                     className={cn(
                     "text-3xl rounded-full p-1 transition-all",
-                    entry.mood === emoji ? 'bg-accent/50 scale-110' : 'hover:bg-muted'
+                    entry.mood === emoji ? 'bg-primary/20 scale-110' : 'hover:bg-muted'
                     )}
                 >
                     {emoji}
@@ -203,23 +218,17 @@ export function JournalLayout() {
                             checked={entry.checklist?.includes(item.id)}
                             onCheckedChange={(checked) => handleChecklistChange(item.id, !!checked)}
                         />
-                        <Label htmlFor={item.id} className="font-normal text-sm cursor-pointer">{item.label}</Label>
+                        <Label htmlFor={item.id} className="font-normal text-sm cursor-pointer flex items-center gap-2">
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </Label>
                     </div>
                 ))}
             </div>
         </div>
       </div>
-      <div className="p-4 border-t space-y-2 mt-auto">
-        <Button variant="outline" className="w-full justify-start" onClick={handleImportClick}>
-          <Upload className="mr-2 h-4 w-4" /> Import Note
-        </Button>
+       <div className="p-4 border-t mt-auto">
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".md,.markdown" />
-        <Button variant="outline" className="w-full justify-start" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" /> Export Note
-        </Button>
-      </div>
-      <div className="p-4 border-t">
-        <ThemeToggle />
       </div>
     </div>
   );
@@ -265,11 +274,69 @@ export function JournalLayout() {
               </Button>
             </div>
             <AnalyzeButton content={entry.content} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Impostazioni</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleImportClick}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  <span>Importa Nota</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Download className="mr-2 h-4 w-4" />
+                  <span>Esporta Nota</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <SunMoon className="mr-2 h-4 w-4" />
+                    <span>Tema</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setTheme('light')}>Chiaro</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme('dark')}>Scuro</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme('system')}>Sistema</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Languages className="mr-2 h-4 w-4" />
+                    <span>Lingua</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem>English</DropdownMenuItem>
+                      <DropdownMenuItem>Italiano</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    <span>Formato Data</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem>dd-MM-yyyy</DropdownMenuItem>
+                      <DropdownMenuItem>MM-dd-yyyy</DropdownMenuItem>
+                      <DropdownMenuItem>yyyy-MM-dd</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden md:hidden' : 'md:block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
-            <div className="flex-grow h-full overflow-y-auto">
+          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'col-span-2' : '')}>
+             <div className="flex-grow h-0 overflow-y-auto">
               <Textarea
                 ref={textareaRef}
                 value={entry.content}
@@ -284,7 +351,7 @@ export function JournalLayout() {
               onContentChange={handleContentChange}
             />
           </div>
-          <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden md:hidden' : 'md:block', viewMode === 'preview' ? 'md:col-span-2' : '')}>
+          <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'col-span-2' : '')}>
             <MarkdownPreview content={entry.content} />
           </div>
         </main>

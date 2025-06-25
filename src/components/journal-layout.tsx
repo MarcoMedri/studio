@@ -81,9 +81,7 @@ export function JournalLayout() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Set states on mount to avoid hydration mismatch
     setIsMounted(true);
-    setSelectedDate(new Date());
     const savedTheme = localStorage.getItem('color-theme') || 'blue';
     setColorTheme(savedTheme);
   }, []);
@@ -95,9 +93,13 @@ export function JournalLayout() {
   }, [colorTheme, isMounted]);
 
   useEffect(() => {
-    if (selectedDate && isMounted) {
-      const loadedEntry = store.getNote(selectedDate);
-      setEntry(loadedEntry);
+    if (isMounted) {
+      if (selectedDate) {
+        const loadedEntry = store.getNote(selectedDate);
+        setEntry(loadedEntry);
+      } else {
+        setSelectedDate(new Date());
+      }
     }
   }, [selectedDate, isMounted]);
 
@@ -147,28 +149,20 @@ export function JournalLayout() {
       const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
       const currentLine = value.substring(lineStart, selectionStart);
 
-      // Continue unordered list
-      const ulMatch = currentLine.match(/^(\s*[-*]\s).*/);
-      if (ulMatch && currentLine.trim().length > ulMatch[1].trim().length) {
+      const listMatch = currentLine.match(/^(\s*([-*]|\d+\.)\s).*/);
+      
+      if (listMatch && currentLine.trim().length > listMatch[1].trim().length) {
         e.preventDefault();
-        const prefix = `\n${ulMatch[1]}`;
-        const newContent =
-          value.substring(0, selectionStart) +
-          prefix +
-          value.substring(selectionStart);
-        handleContentChange(newContent);
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = selectionStart + prefix.length;
-        }, 0);
-        return;
-      }
+        let prefix = '';
+        const olMatch = currentLine.match(/^(\s*)(\d+)(\.\s)/);
 
-      // Continue ordered list
-      const olMatch = currentLine.match(/^(\s*)(\d+)(\.\s).*/);
-      if (olMatch && currentLine.trim().length > `${olMatch[2]}${olMatch[3]}`.trim().length) {
-        e.preventDefault();
-        const nextNumber = parseInt(olMatch[2], 10) + 1;
-        const prefix = `\n${olMatch[1]}${nextNumber}${olMatch[3]}`;
+        if (olMatch) {
+            const nextNumber = parseInt(olMatch[2], 10) + 1;
+            prefix = `\n${olMatch[1]}${nextNumber}${olMatch[3]}`;
+        } else {
+            prefix = `\n${listMatch[1]}`;
+        }
+        
         const newContent =
           value.substring(0, selectionStart) +
           prefix +
@@ -473,14 +467,14 @@ export function JournalLayout() {
               content={entry.content}
               onContentChange={handleContentChange}
             />
-             <div className="flex-1 overflow-y-auto">
+            <div className="relative flex-1">
               <Textarea
                 ref={textareaRef}
                 value={entry.content}
                 onChange={(e) => handleContentChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Start writing your journal entry here..."
-                className="h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
+                className="absolute inset-0 h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
               />
             </div>
           </div>

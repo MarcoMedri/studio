@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Wand2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
 import { cn } from '@/lib/utils';
@@ -16,34 +16,44 @@ import { AnalyzeButton } from '@/components/analyze-button';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+import { MarkdownToolbar } from './markdown-toolbar';
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
 
+const checklistItems = [
+    {id: 'alimentazione', label: 'Alimentazione'},
+    {id: 'sonno', label: 'Sonno'},
+    {id: 'esercizio', label: 'Esercizio fisico'},
+    {id: 'studio', label: 'Studio'},
+    {id: 'lettura', label: 'Lettura'},
+];
+
 export function JournalLayout() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [noteContent, setNoteContent] = useState('');
+  const [entry, setEntry] = useState<store.JournalEntry>({ content: '', checklist: [] });
   const [datesWithNotes, setDatesWithNotes] = useState<Date[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const debouncedContent = useDebounce(noteContent, 500);
+  const debouncedEntry = useDebounce(entry, 500);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    const content = store.getNote(selectedDate);
-    setNoteContent(content);
+    const loadedEntry = store.getNote(selectedDate);
+    setEntry(loadedEntry);
   }, [selectedDate]);
 
   useEffect(() => {
-    store.saveNote(selectedDate, debouncedContent);
+    store.saveNote(selectedDate, debouncedEntry);
     setDatesWithNotes(store.getDatesWithNotes());
-  }, [debouncedContent, selectedDate]);
+  }, [debouncedEntry, selectedDate]);
 
   useEffect(() => {
     if (isMobile) setViewMode('editor');
@@ -56,8 +66,29 @@ export function JournalLayout() {
     }
   };
 
+  const handleContentChange = (content: string) => {
+    setEntry(prev => ({...prev, content}));
+  }
+  
+  const handleMoodChange = (mood: string) => {
+    setEntry(prev => ({...prev, mood: prev.mood === mood ? undefined : mood }));
+  }
+  
+  const handleChecklistChange = (item: string, checked: boolean) => {
+    setEntry(prev => {
+        const newChecklist = prev.checklist ? [...prev.checklist] : [];
+        if (checked) {
+            if (!newChecklist.includes(item)) newChecklist.push(item);
+        } else {
+            const index = newChecklist.indexOf(item);
+            if (index > -1) newChecklist.splice(index, 1);
+        }
+        return {...prev, checklist: newChecklist};
+    });
+  }
+
   const handleExport = () => {
-    const content = store.getNote(selectedDate);
+    const content = entry.content;
     const dateString = format(selectedDate, 'dd-MM-yyyy');
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -103,7 +134,6 @@ export function JournalLayout() {
       };
       reader.readAsText(file);
     }
-    // Reset file input
     if(e.target) e.target.value = '';
   };
   
@@ -116,7 +146,7 @@ export function JournalLayout() {
       <div className="p-4 border-b">
         <h1 className="text-2xl font-bold font-headline text-primary">Mark Journal</h1>
       </div>
-      <div className="p-4 flex-grow">
+      <div className="p-4 flex-grow overflow-y-auto">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -146,8 +176,40 @@ export function JournalLayout() {
             },
           }}
         />
+        <div className="p-4 border-t mt-4">
+            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Umore della giornata</h3>
+            <div className="flex justify-around">
+                {['😄', '😊', '😐', '😕', '😢'].map((emoji) => (
+                <button
+                    key={emoji}
+                    onClick={() => handleMoodChange(emoji)}
+                    className={cn(
+                    "text-3xl rounded-full p-1 transition-all",
+                    entry.mood === emoji ? 'bg-accent/50 scale-110' : 'hover:bg-muted'
+                    )}
+                >
+                    {emoji}
+                </button>
+                ))}
+            </div>
+        </div>
+        <div className="p-4 border-t">
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Checklist Giornaliera</h3>
+            <div className="space-y-2">
+                {checklistItems.map(item => (
+                    <div key={item.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                            id={item.id}
+                            checked={entry.checklist?.includes(item.id)}
+                            onCheckedChange={(checked) => handleChecklistChange(item.id, !!checked)}
+                        />
+                        <Label htmlFor={item.id} className="font-normal text-sm cursor-pointer">{item.label}</Label>
+                    </div>
+                ))}
+            </div>
+        </div>
       </div>
-      <div className="p-4 border-t space-y-2">
+      <div className="p-4 border-t space-y-2 mt-auto">
         <Button variant="outline" className="w-full justify-start" onClick={handleImportClick}>
           <Upload className="mr-2 h-4 w-4" /> Import Note
         </Button>
@@ -156,7 +218,7 @@ export function JournalLayout() {
           <Download className="mr-2 h-4 w-4" /> Export Note
         </Button>
       </div>
-      <div className="p-4 mt-auto border-t">
+      <div className="p-4 border-t">
         <ThemeToggle />
       </div>
     </div>
@@ -202,20 +264,28 @@ export function JournalLayout() {
                 <BookOpen className="h-4 w-4" />
               </Button>
             </div>
-            <AnalyzeButton content={noteContent} />
+            <AnalyzeButton content={entry.content} />
           </div>
         </header>
         <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className={cn('h-full overflow-y-auto', viewMode === 'preview' ? 'hidden md:hidden' : 'md:block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
-            <Textarea
-              value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Start writing your journal entry here..."
-              className="h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
+          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden md:hidden' : 'md:block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
+            <div className="flex-grow h-full overflow-y-auto">
+              <Textarea
+                ref={textareaRef}
+                value={entry.content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder="Start writing your journal entry here..."
+                className="h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
+              />
+            </div>
+            <MarkdownToolbar 
+              textareaRef={textareaRef}
+              content={entry.content}
+              onContentChange={handleContentChange}
             />
           </div>
           <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden md:hidden' : 'md:block', viewMode === 'preview' ? 'md:col-span-2' : '')}>
-            <MarkdownPreview content={noteContent} />
+            <MarkdownPreview content={entry.content} />
           </div>
         </main>
       </div>

@@ -62,7 +62,7 @@ const colorThemes = [
 ]
 
 export function JournalLayout() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [entry, setEntry] = useState<store.JournalEntry>({ content: '', checklist: [] });
   const [datesWithNotes, setDatesWithNotes] = useState<Date[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
@@ -75,6 +75,11 @@ export function JournalLayout() {
   const [colorTheme, setColorTheme] = useState('blue');
 
   useEffect(() => {
+    // Set date on mount to avoid hydration mismatch
+    setSelectedDate(new Date());
+  }, []);
+
+  useEffect(() => {
     const savedTheme = localStorage.getItem('color-theme') || 'blue';
     setColorTheme(savedTheme);
   }, []);
@@ -85,13 +90,17 @@ export function JournalLayout() {
   }, [colorTheme]);
 
   useEffect(() => {
-    const loadedEntry = store.getNote(selectedDate);
-    setEntry(loadedEntry);
+    if (selectedDate) {
+      const loadedEntry = store.getNote(selectedDate);
+      setEntry(loadedEntry);
+    }
   }, [selectedDate]);
 
   useEffect(() => {
-    store.saveNote(selectedDate, debouncedEntry);
-    setDatesWithNotes(store.getDatesWithNotes());
+    if (selectedDate) {
+      store.saveNote(selectedDate, debouncedEntry);
+      setDatesWithNotes(store.getDatesWithNotes());
+    }
   }, [debouncedEntry, selectedDate]);
 
   useEffect(() => {
@@ -127,6 +136,7 @@ export function JournalLayout() {
   }
 
   const handleExport = () => {
+    if (!selectedDate) return;
     const content = entry.content;
     const dateString = format(selectedDate, 'dd-MM-yyyy');
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
@@ -177,6 +187,7 @@ export function JournalLayout() {
   };
   
   const handleDeleteNote = (date: Date) => {
+    if (!selectedDate) return;
     store.deleteNote(date);
     setDatesWithNotes(store.getDatesWithNotes());
     if (format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) {
@@ -310,7 +321,7 @@ export function JournalLayout() {
             )}
             <Button variant="ghost" size="sm" className="hidden md:flex items-center">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              <span className="text-lg">{format(selectedDate, 'PPP')}</span>
+              <span className="text-lg">{selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
             </Button>
           </div>
           <div className="flex items-center gap-2">

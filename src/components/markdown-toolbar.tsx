@@ -1,6 +1,6 @@
 'use client';
 
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4 } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript } from 'lucide-react';
 import { Button } from './ui/button';
 import type { RefObject } from 'react';
 import { Separator } from './ui/separator';
@@ -97,7 +97,7 @@ export function MarkdownToolbar({ textareaRef, content, onContentChange }: Markd
 
 
   return (
-    <div className="flex items-center gap-1 p-2 border-t bg-muted/50">
+    <div className="flex items-center gap-1 p-2 border-b bg-muted/50">
       <Button variant="ghost" size="icon" onClick={() => insertText('**', '**')} title="Bold">
         <Bold className="h-4 w-4" />
       </Button>
@@ -123,6 +123,13 @@ export function MarkdownToolbar({ textareaRef, content, onContentChange }: Markd
       </Button>
       <Button variant="ghost" size="icon" onClick={() => insertHeading(4)} title="Heading 4">
         <Heading4 className="h-4 w-4" />
+      </Button>
+      <Separator orientation="vertical" className="h-6" />
+      <Button variant="ghost" size="icon" onClick={() => insertText('<sup>', '</sup>')} title="Superscript">
+        <Superscript className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => insertText('<sub>', '</sub>')} title="Subscript">
+        <Subscript className="h-4 w-4" />
       </Button>
     </div>
   );

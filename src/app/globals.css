@@ -27,6 +27,26 @@ body {
     --primary-foreground: 346.8 77.2% 97.8%;
     --ring: 346.8 77.2% 49.8%;
   }
+  html[data-color-theme="violet"] {
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 262.1 83.3% 97.8%;
+    --ring: 262.1 83.3% 57.8%;
+  }
+  html[data-color-theme="yellow"] {
+    --primary: 47.9 95.8% 53.1%;
+    --primary-foreground: 47.9 95.8% 98.1%;
+    --ring: 47.9 95.8% 53.1%;
+  }
+  html[data-color-theme="cyan"] {
+    --primary: 195.1 90.2% 48.2%;
+    --primary-foreground: 195.1 90.2% 97.2%;
+    --ring: 195.1 90.2% 48.2%;
+  }
+  html[data-color-theme="slate"] {
+    --primary: 215.2 27.9% 46.9%;
+    --primary-foreground: 215.2 27.9% 96.9%;
+    --ring: 215.2 27.9% 46.9%;
+  }
 
   :root {
     --background: 0 0% 100%;
@@ -54,6 +74,15 @@ body {
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+    
+    --blue-preview: 217.2 91.2% 59.8%;
+    --green-preview: 142.1 76.2% 36.3%;
+    --orange-preview: 24.6 95% 53.1%;
+    --rose-preview: 346.8 77.2% 49.8%;
+    --violet-preview: 262.1 83.3% 57.8%;
+    --yellow-preview: 47.9 95.8% 53.1%;
+    --cyan-preview: 195.1 90.2% 48.2%;
+    --slate-preview: 215.2 27.9% 46.9%;
   }
   .dark {
     --background: 222.2 84% 4.9%;

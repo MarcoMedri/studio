@@ -42,6 +42,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import { Skeleton } from './ui/skeleton';
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -55,11 +56,15 @@ const checklistItems = [
 ];
 
 const colorThemes = [
-    { name: 'blue', label: 'Blu', className: 'bg-blue-500' },
-    { name: 'green', label: 'Verde', className: 'bg-green-500' },
-    { name: 'orange', label: 'Arancione', className: 'bg-orange-500' },
-    { name: 'rose', label: 'Rosa', className: 'bg-rose-500' },
-]
+    { name: 'blue', label: 'Blu' },
+    { name: 'green', label: 'Verde' },
+    { name: 'orange', label: 'Arancione' },
+    { name: 'rose', label: 'Rosa' },
+    { name: 'violet', label: 'Viola' },
+    { name: 'yellow', label: 'Giallo' },
+    { name: 'cyan', label: 'Ciano' },
+    { name: 'slate', label: 'Grigio' },
+];
 
 export function JournalLayout() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -73,13 +78,12 @@ export function JournalLayout() {
   const isMobile = useIsMobile();
   const { setTheme } = useTheme();
   const [colorTheme, setColorTheme] = useState('blue');
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    // Set date on mount to avoid hydration mismatch
+    // Set states on mount to avoid hydration mismatch
+    setIsMounted(true);
     setSelectedDate(new Date());
-  }, []);
-
-  useEffect(() => {
     const savedTheme = localStorage.getItem('color-theme') || 'blue';
     setColorTheme(savedTheme);
   }, []);
@@ -134,6 +138,48 @@ export function JournalLayout() {
         return {...prev, checklist: newChecklist};
     });
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      const textarea = e.currentTarget;
+      const { selectionStart, value } = textarea;
+      const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+      const currentLine = value.substring(lineStart, selectionStart);
+
+      // Continue unordered list
+      const ulMatch = currentLine.match(/^(\s*[-*]\s).*/);
+      if (ulMatch && currentLine.trim().length > ulMatch[1].trim().length) {
+        e.preventDefault();
+        const prefix = `\n${ulMatch[1]}`;
+        const newContent =
+          value.substring(0, selectionStart) +
+          prefix +
+          value.substring(selectionStart);
+        handleContentChange(newContent);
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = selectionStart + prefix.length;
+        }, 0);
+        return;
+      }
+
+      // Continue ordered list
+      const olMatch = currentLine.match(/^(\s*)(\d+)(\.\s).*/);
+      if (olMatch && currentLine.trim().length > `${olMatch[2]}${olMatch[3]}`.trim().length) {
+        e.preventDefault();
+        const nextNumber = parseInt(olMatch[2], 10) + 1;
+        const prefix = `\n${olMatch[1]}${nextNumber}${olMatch[3]}`;
+        const newContent =
+          value.substring(0, selectionStart) +
+          prefix +
+          value.substring(selectionStart);
+        handleContentChange(newContent);
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = selectionStart + prefix.length;
+        }, 0);
+        return;
+      }
+    }
+  };
 
   const handleExport = () => {
     if (!selectedDate) return;
@@ -206,54 +252,60 @@ export function JournalLayout() {
         <h1 className="text-2xl font-bold font-headline text-primary">Mark Journal</h1>
       </div>
       <div className="p-4 flex-grow overflow-y-auto">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          className="rounded-md"
-          modifiers={calendarModifiers}
-          modifiersStyles={{
-            hasNote: {
-              position: 'relative',
-              overflow: 'visible',
-            },
-          }}
-          components={{
-            DayContent: (props) => {
-              const { date } = props;
-              const isModified = calendarModifiers.hasNote && calendarModifiers.hasNote.some(
-                d => format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-              );
-              
-              const dayContent = (
-                <div className="relative h-full w-full flex items-center justify-center">
-                  {date.getDate()}
-                  {isModified && (
-                    <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"></div>
-                  )}
-                </div>
-              );
+        {isMounted ? (
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              className="rounded-md"
+              modifiers={calendarModifiers}
+              modifiersStyles={{
+                hasNote: {
+                  position: 'relative',
+                  overflow: 'visible',
+                },
+              }}
+              components={{
+                DayContent: (props) => {
+                  const { date } = props;
+                  const isModified = calendarModifiers.hasNote && calendarModifiers.hasNote.some(
+                    d => format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+                  );
+                  
+                  const dayContent = (
+                    <div className="relative h-full w-full flex items-center justify-center">
+                      {date.getDate()}
+                      {isModified && (
+                        <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-primary"></div>
+                      )}
+                    </div>
+                  );
 
-              if (isModified) {
-                return (
-                  <ContextMenu>
-                    <ContextMenuTrigger className="h-full w-full">
-                      {dayContent}
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem onClick={() => handleDeleteNote(date)} className="text-destructive cursor-pointer">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Cancella nota</span>
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                );
-              }
+                  if (isModified) {
+                    return (
+                      <ContextMenu>
+                        <ContextMenuTrigger className="h-full w-full">
+                          {dayContent}
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem onClick={() => handleDeleteNote(date)} className="text-destructive cursor-pointer">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Cancella nota</span>
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    );
+                  }
 
-              return dayContent;
-            },
-          }}
-        />
+                  return dayContent;
+                },
+              }}
+            />
+        ) : (
+          <div className="p-3">
+              <Skeleton className="h-[290px] w-full" />
+          </div>
+        )}
         <div className="p-4 border-t mt-4">
             <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Umore della giornata</h3>
             <div className="flex justify-around">
@@ -321,7 +373,7 @@ export function JournalLayout() {
             )}
             <Button variant="ghost" size="sm" className="hidden md:flex items-center">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              <span className="text-lg">{selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
+              <span className="text-lg">{isMounted && selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
             </Button>
           </div>
           <div className="flex items-center gap-2">
@@ -377,7 +429,7 @@ export function JournalLayout() {
                     <DropdownMenuSubContent>
                       {colorThemes.map(theme => (
                         <DropdownMenuItem key={theme.name} onClick={() => setColorTheme(theme.name)}>
-                           <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview, var(--primary)))` }} />
+                           <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview))` }} />
                           {theme.label}
                         </DropdownMenuItem>
                       ))}
@@ -415,20 +467,21 @@ export function JournalLayout() {
         </header>
         <main className="flex-grow grid grid-cols-1 md:grid-cols-2 overflow-hidden">
           <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'col-span-2' : '')}>
-             <div className="flex-1 overflow-y-auto">
-              <Textarea
-                ref={textareaRef}
-                value={entry.content}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Start writing your journal entry here..."
-                className="h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
-              />
-            </div>
             <MarkdownToolbar 
               textareaRef={textareaRef}
               content={entry.content}
               onContentChange={handleContentChange}
             />
+             <div className="flex-1 overflow-y-auto">
+              <Textarea
+                ref={textareaRef}
+                value={entry.content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Start writing your journal entry here..."
+                className="h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
+              />
+            </div>
           </div>
           <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'col-span-2' : '')}>
             <MarkdownPreview content={entry.content} />

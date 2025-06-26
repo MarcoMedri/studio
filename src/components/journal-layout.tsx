@@ -284,6 +284,13 @@ export function JournalLayout() {
         <h1 className="text-2xl font-bold font-headline text-primary">Mark Journal</h1>
       </div>
       <div className="p-4 flex-grow overflow-y-auto">
+        <Button
+          onClick={() => handleDateSelect(new Date())}
+          className="w-full mb-4"
+          variant="outline"
+        >
+          Oggi
+        </Button>
         {isMounted ? (
             <Calendar
               mode="single"

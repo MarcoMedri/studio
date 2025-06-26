@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { 
-  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript, BarChart
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
@@ -384,6 +385,11 @@ export function JournalLayout() {
               </Button>
             </div>
             <AnalyzeButton content={entry.content} />
+            <Link href="/stats" passHref>
+              <Button variant="outline" size="icon" aria-label="Statistics">
+                <BarChart className="h-4 w-4" />
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">

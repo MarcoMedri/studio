@@ -8,31 +8,35 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { Skeleton } from './ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Smile, ListChecks } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 
 const moodMap: { [key: string]: number } = { '😢': 1, '😕': 2, '😐': 3, '😊': 4, '😄': 5 };
 const moodEmojiMap: { [key: number]: string } = { 1: '😢', 2: '😕', 3: '😐', 4: '😊', 5: '😄' };
-const checklistItemLabels: { [key: string]: string } = {
-    'alimentazione': 'Alimentazione',
-    'sonno': 'Sonno',
-    'esercizio': 'Esercizio fisico',
-    'studio': 'Studio',
-    'lettura': 'Lettura',
-};
 
-const timeRangeOptions = [
-    { value: '7', label: 'Ultimi 7 giorni' },
-    { value: '30', label: 'Ultimi 30 giorni' },
-    { value: '90', label: 'Ultimo trimestre' },
-    { value: '365', label: 'Ultimo anno' },
-];
 
 export function Statistics() {
+    const { t, dateLocale } = useTranslation();
     const [timeRange, setTimeRange] = useState('30');
     const [trendData, setTrendData] = useState<any[]>([]);
     const [frequencyData, setFrequencyData] = useState<any[]>([]);
     const [averageMood, setAverageMood] = useState<number | null>(null);
     const [averageChecklist, setAverageChecklist] = useState<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+
+    const checklistItemLabels: { [key: string]: string } = {
+        'alimentazione': t('checklist.food'),
+        'sonno': t('checklist.sleep'),
+        'esercizio': t('checklist.exercise'),
+        'studio': t('checklist.study'),
+        'lettura': t('checklist.reading'),
+    };
+    
+    const timeRangeOptions = [
+        { value: '7', label: t('stats.last7') },
+        { value: '30', label: t('stats.last30') },
+        { value: '90', label: t('stats.last90') },
+        { value: '365', label: t('stats.last365') },
+    ];
 
     useEffect(() => {
         setIsMounted(true);
@@ -54,8 +58,8 @@ export function Statistics() {
 
         const processedTrendData = filteredNotes.map(note => ({
             date: format(note.date, 'dd/MM'),
-            Umore: note.mood ? moodMap[note.mood] : null,
-            Checklist: note.checklist?.length || 0,
+            [t('stats.mood')]: note.mood ? moodMap[note.mood] : null,
+            [t('stats.checklist')]: note.checklist?.length || 0,
         }));
         setTrendData(processedTrendData);
 
@@ -72,7 +76,7 @@ export function Statistics() {
         });
         const processedFrequencyData = Object.entries(frequencyMap).map(([key, value]) => ({
             name: checklistItemLabels[key],
-            conteggio: value,
+            [t('stats.count')]: value,
         }));
         setFrequencyData(processedFrequencyData);
 
@@ -91,7 +95,7 @@ export function Statistics() {
             setAverageChecklist(null);
         }
 
-    }, [isMounted, timeRange]);
+    }, [isMounted, timeRange, t]);
 
     const roundedAvgMood = averageMood ? Math.round(averageMood) : null;
     const avgMoodEmoji = roundedAvgMood ? moodEmojiMap[roundedAvgMood] : '—';
@@ -120,17 +124,17 @@ export function Statistics() {
         );
     }
     
-    const noData = trendData.length === 0 && frequencyData.every(item => item.conteggio === 0);
+    const noData = trendData.length === 0 && frequencyData.every(item => item[t('stats.count')] === 0);
 
     const filterCard = (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Filtro Temporale</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('stats.timeFilter')}</CardTitle>
             </CardHeader>
             <CardContent>
                  <Select value={timeRange} onValueChange={setTimeRange}>
                     <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleziona intervallo" />
+                        <SelectValue placeholder={t('stats.selectRange')} />
                     </SelectTrigger>
                     <SelectContent>
                         {timeRangeOptions.map(option => (
@@ -149,11 +153,11 @@ export function Statistics() {
             <div className="flex items-center justify-center h-full">
                 <Card className="w-full max-w-md text-center">
                     <CardHeader>
-                        <CardTitle>Nessun dato disponibile</CardTitle>
+                        <CardTitle>{t('stats.noDataTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            Inizia a scrivere nel tuo diario per vedere qui le tue statistiche. Seleziona un intervallo di tempo diverso se pensi ci siano dati.
+                            {t('stats.noDataDesc')}
                         </p>
                          <div className="mt-4">
                             {filterCard}
@@ -170,25 +174,25 @@ export function Statistics() {
                 {filterCard}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Umore Medio</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('stats.avgMood')}</CardTitle>
                         <Smile className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{avgMoodEmoji} ({avgMoodValue})</div>
                         <p className="text-xs text-muted-foreground">
-                            Media dell'umore nel periodo selezionato.
+                            {t('stats.avgMoodDesc')}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Checklist Media</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('stats.avgChecklist')}</CardTitle>
                         <ListChecks className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{avgChecklistValue}</div>
                         <p className="text-xs text-muted-foreground">
-                           Media di attività completate al giorno.
+                           {t('stats.avgChecklistDesc')}
                         </p>
                     </CardContent>
                 </Card>
@@ -197,8 +201,8 @@ export function Statistics() {
             <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Andamento Umore e Checklist</CardTitle>
-                        <CardDescription>Visualizzazione nel periodo selezionato.</CardDescription>
+                        <CardTitle>{t('stats.trendTitle')}</CardTitle>
+                        <CardDescription>{t('stats.trendDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
@@ -210,15 +214,15 @@ export function Statistics() {
                                 <Tooltip
                                     contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
                                     formatter={(value, name) => {
-                                        if(name === 'Umore' && typeof value === 'number') {
+                                        if(name === t('stats.mood') && typeof value === 'number') {
                                             return [moodEmojiMap[value], name];
                                         }
                                         return [value, name];
                                     }}
                                 />
                                 <Legend />
-                                <Line yAxisId="left" type="monotone" dataKey="Umore" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} connectNulls />
-                                <Line yAxisId="right" type="monotone" dataKey="Checklist" stroke="hsl(var(--chart-2))" />
+                                <Line yAxisId="left" type="monotone" dataKey={t('stats.mood')} stroke="hsl(var(--primary))" activeDot={{ r: 8 }} connectNulls />
+                                <Line yAxisId="right" type="monotone" dataKey={t('stats.checklist')} stroke="hsl(var(--chart-2))" />
                             </LineChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -226,8 +230,8 @@ export function Statistics() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Frequenza Checklist</CardTitle>
-                        <CardDescription>Conteggio totale per attività nel periodo selezionato.</CardDescription>
+                        <CardTitle>{t('stats.freqTitle')}</CardTitle>
+                        <CardDescription>{t('stats.freqDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
@@ -242,7 +246,7 @@ export function Statistics() {
                                         borderColor: 'hsl(var(--border))',
                                     }}
                                 />
-                                <Bar dataKey="conteggio" fill="hsl(var(--primary))" />
+                                <Bar dataKey={t('stats.count')} fill="hsl(var(--primary))" />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>

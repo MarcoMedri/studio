@@ -1,12 +1,14 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 interface MarkdownPreviewProps {
   content: string;
 }
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
+  const { t } = useTranslation();
   const renderContent = () => {
     // Add a simple rule for bullet points
     return content.split('\n').map((line, index) => {
@@ -45,7 +47,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
 
   return (
     <div className="prose dark:prose-invert max-w-none font-headline p-8 text-foreground/90">
-      {content ? renderContent() : <div className="text-muted-foreground">Preview will appear here.</div>}
+      {content ? renderContent() : <div className="text-muted-foreground">{t('previewPlaceholder')}</div>}
     </div>
   );
 };

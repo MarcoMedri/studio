@@ -54,6 +54,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from '@/lib/i18n';
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -64,22 +65,22 @@ type PendingDeletion = {
 };
 
 const checklistItems = [
-    {id: 'alimentazione', label: 'Alimentazione', icon: <Apple className="h-4 w-4 text-muted-foreground" />},
-    {id: 'sonno', label: 'Sonno', icon: <BedDouble className="h-4 w-4 text-muted-foreground" />},
-    {id: 'esercizio', label: 'Esercizio fisico', icon: <Dumbbell className="h-4 w-4 text-muted-foreground" />},
-    {id: 'studio', label: 'Studio', icon: <GraduationCap className="h-4 w-4 text-muted-foreground" />},
-    {id: 'lettura', label: 'Lettura', icon: <BookOpen className="h-4 w-4 text-muted-foreground" />},
+    {id: 'alimentazione', labelKey: 'checklist.food', icon: <Apple className="h-4 w-4 text-muted-foreground" />},
+    {id: 'sonno', labelKey: 'checklist.sleep', icon: <BedDouble className="h-4 w-4 text-muted-foreground" />},
+    {id: 'esercizio', labelKey: 'checklist.exercise', icon: <Dumbbell className="h-4 w-4 text-muted-foreground" />},
+    {id: 'studio', labelKey: 'checklist.study', icon: <GraduationCap className="h-4 w-4 text-muted-foreground" />},
+    {id: 'lettura', labelKey: 'checklist.reading', icon: <BookOpen className="h-4 w-4 text-muted-foreground" />},
 ];
 
 const colorThemes = [
-    { name: 'blue', label: 'Blu' },
-    { name: 'green', label: 'Verde' },
-    { name: 'orange', label: 'Arancione' },
-    { name: 'rose', label: 'Rosa' },
-    { name: 'violet', label: 'Viola' },
-    { name: 'yellow', label: 'Giallo' },
-    { name: 'cyan', label: 'Ciano' },
-    { name: 'slate', label: 'Grigio' },
+    { name: 'blue', labelKey: 'blue' },
+    { name: 'green', labelKey: 'green' },
+    { name: 'orange', labelKey: 'orange' },
+    { name: 'rose', labelKey: 'rose' },
+    { name: 'violet', labelKey: 'violet' },
+    { name: 'yellow', labelKey: 'yellow' },
+    { name: 'cyan', labelKey: 'cyan' },
+    { name: 'slate', labelKey: 'slate' },
 ];
 
 export function JournalLayout() {
@@ -97,6 +98,7 @@ export function JournalLayout() {
   const [isMounted, setIsMounted] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
+  const { t, language, setLanguage, dateLocale } = useTranslation();
 
   useEffect(() => {
     setIsMounted(true);
@@ -207,7 +209,7 @@ export function JournalLayout() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast({ title: 'Note Exported', description: `Entry for ${dateString} saved.` });
+    toast({ title: t('toasts.noteExported'), description: t('toasts.noteExportedDesc', { date: dateString }) });
   };
 
   const handleImportClick = () => {
@@ -226,8 +228,8 @@ export function JournalLayout() {
             setSelectedDate(newDate);
             setDatesWithNotes(store.getDatesWithNotes());
             toast({
-              title: 'Import Successful',
-              description: `Imported note for ${format(newDate, 'PPP')}.`,
+              title: t('toasts.importSuccess'),
+              description: t('toasts.importSuccessDesc', { date: format(newDate, 'PPP', { locale: dateLocale }) }),
             });
           } else {
             throw new Error('Invalid filename format.');
@@ -235,8 +237,8 @@ export function JournalLayout() {
         } catch (error) {
           toast({
             variant: 'destructive',
-            title: 'Import Failed',
-            description: 'Please use dd-mm-yyyy.md format.',
+            title: t('toasts.importFailed'),
+            description: t('toasts.importFailedDesc'),
           });
         }
       };
@@ -252,7 +254,7 @@ export function JournalLayout() {
     if (format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')) {
         setEntry({ content: '', checklist: [] });
     }
-    toast({ title: 'Nota cancellata' });
+    toast({ title: t('toasts.noteDeleted') });
   };
   
   const handleConfirmDelete = () => {
@@ -270,7 +272,7 @@ export function JournalLayout() {
         setEntry(loadedEntry);
     }
     
-    toast({ title: 'Note eliminate', description: `Le note selezionate sono state eliminate.` });
+    toast({ title: t('toasts.notesDeleted'), description: t('toasts.notesDeletedDesc') });
     setPendingDeletion(null);
   };
 
@@ -289,7 +291,7 @@ export function JournalLayout() {
           className="w-full mb-4"
           variant="outline"
         >
-          Oggi
+          {t('today')}
         </Button>
         {isMounted ? (
             <Calendar
@@ -298,6 +300,8 @@ export function JournalLayout() {
               onSelect={handleDateSelect}
               className="rounded-md"
               modifiers={calendarModifiers}
+              locale={dateLocale}
+              showWeekNumber
               modifiersStyles={{
                 hasNote: {
                   position: 'relative',
@@ -329,7 +333,7 @@ export function JournalLayout() {
                         <ContextMenuContent>
                           <ContextMenuItem onClick={() => handleDeleteNote(date)} className="text-destructive cursor-pointer">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            <span>Cancella nota</span>
+                            <span>{t('toasts.noteDeleted')}</span>
                           </ContextMenuItem>
                         </ContextMenuContent>
                       </ContextMenu>
@@ -346,7 +350,7 @@ export function JournalLayout() {
           </div>
         )}
         <div className="p-4 border-t mt-4">
-            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Umore della giornata</h3>
+            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">{t('mood')}</h3>
             <div className="flex justify-around">
                 {['😄', '😊', '😐', '😕', '😢'].map((emoji) => (
                 <button
@@ -363,7 +367,7 @@ export function JournalLayout() {
             </div>
         </div>
         <div className="p-4 border-t">
-            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Checklist Giornaliera</h3>
+            <h3 className="text-sm font-semibold mb-3 text-muted-foreground">{t('checklist.title')}</h3>
             <div className="space-y-2">
                 {checklistItems.map(item => (
                     <div key={item.id} className="flex items-center space-x-2">
@@ -374,7 +378,7 @@ export function JournalLayout() {
                         />
                         <Label htmlFor={item.id} className="font-normal text-sm cursor-pointer flex items-center gap-2">
                           {item.icon}
-                          <span>{item.label}</span>
+                          <span>{t(item.labelKey)}</span>
                         </Label>
                     </div>
                 ))}
@@ -413,7 +417,7 @@ export function JournalLayout() {
               )}
               <Button variant="ghost" size="sm" className="hidden md:flex items-center">
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                <span className="text-lg">{isMounted && selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
+                <span className="text-lg">{isMounted && selectedDate ? format(selectedDate, 'PPP', { locale: dateLocale }) : t('loadingDate')}</span>
               </Button>
             </div>
             <div className="flex items-center gap-2">
@@ -441,41 +445,41 @@ export function JournalLayout() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Impostazioni</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('settings.title')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleImportClick}>
                     <Upload className="mr-2 h-4 w-4" />
-                    <span>Importa Nota</span>
+                    <span>{t('settings.import')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExport}>
                     <Download className="mr-2 h-4 w-4" />
-                    <span>Esporta Nota</span>
+                    <span>{t('settings.export')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <SunMoon className="mr-2 h-4 w-4" />
-                      <span>Tema</span>
+                      <span>{t('settings.theme')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => setTheme('light')}>Chiaro</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme('dark')}>Scuro</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme('system')}>Sistema</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('light')}>{t('settings.light')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('dark')}>{t('settings.dark')}</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('system')}>{t('settings.system')}</DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <Palette className="mr-2 h-4 w-4" />
-                      <span>Colore Tema</span>
+                      <span>{t('settings.colorTheme')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
                         {colorThemes.map(theme => (
                           <DropdownMenuItem key={theme.name} onClick={() => setColorTheme(theme.name)}>
                             <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview))` }} />
-                            {theme.label}
+                            {t(theme.labelKey)}
                           </DropdownMenuItem>
                         ))}
                       </DropdownMenuSubContent>
@@ -484,19 +488,19 @@ export function JournalLayout() {
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <Languages className="mr-2 h-4 w-4" />
-                      <span>Lingua</span>
+                      <span>{t('settings.language')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
-                        <DropdownMenuItem>English</DropdownMenuItem>
-                        <DropdownMenuItem>Italiano</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLanguage('en')}>🇬🇧 English</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setLanguage('it')}>🇮🇹 Italiano</DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <CalendarDays className="mr-2 h-4 w-4" />
-                      <span>Formato Data</span>
+                      <span>{t('settings.dateFormat')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
@@ -510,34 +514,34 @@ export function JournalLayout() {
                    <DropdownMenuSub>
                     <DropdownMenuSubTrigger className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Cancellazione Massiva</span>
+                      <span>{t('settings.massDelete')}</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
                         <DropdownMenuItem className="text-destructive" onClick={() => {
-                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 7), end: new Date() }, label: 'delle ultime 7 giorni' });
+                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 7), end: new Date() }, label: t('settings.last7days') });
                           setIsDeleteDialogOpen(true);
                         }}>
-                          <span>Ultimi 7 giorni</span>
+                          <span>{t('settings.last7days')}</span>
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive" onClick={() => {
-                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 30), end: new Date() }, label: 'degli ultimi 30 giorni' });
+                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 30), end: new Date() }, label: t('settings.last30days') });
                           setIsDeleteDialogOpen(true);
                         }}>
-                          <span>Ultimi 30 giorni</span>
+                          <span>{t('settings.last30days')}</span>
                         </DropdownMenuItem>
                          <DropdownMenuItem className="text-destructive" onClick={() => {
-                          setPendingDeletion({ type: 'range', range: { start: subYears(new Date(), 1), end: new Date() }, label: 'dell\'ultimo anno' });
+                          setPendingDeletion({ type: 'range', range: { start: subYears(new Date(), 1), end: new Date() }, label: t('settings.lastYear') });
                           setIsDeleteDialogOpen(true);
                         }}>
-                          <span>Ultimo anno</span>
+                          <span>{t('settings.lastYear')}</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={() => {
                           setPendingDeletion({ type: 'all', label: 'tutte' });
                           setIsDeleteDialogOpen(true);
                         }}>
-                          <span>Tutte le note</span>
+                          <span>{t('settings.allNotes')}</span>
                         </DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
@@ -559,7 +563,7 @@ export function JournalLayout() {
                   value={entry.content}
                   onChange={(e) => handleContentChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Start writing your journal entry here..."
+                  placeholder={t('editorPlaceholder')}
                   className="absolute inset-0 h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
                 />
               </div>
@@ -574,15 +578,15 @@ export function JournalLayout() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Questa azione è irreversibile. Eliminerà definitivamente {pendingDeletion?.label} le note.
+              {t('deleteDialog.description', { label: pendingDeletion?.type === 'all' ? t('deleteDialog.description_all') : pendingDeletion?.label ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingDeletion(null)}>Annulla</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPendingDeletion(null)}>{t('deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>
-              Conferma
+              {t('deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

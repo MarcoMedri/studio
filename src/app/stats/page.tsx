@@ -6,7 +6,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Journal Statistics',
-  description: 'View statistics and trends for your journal entries.',
+  description: 'Analizza l\'andamento del tuo umore e delle tue abitudini nel tempo.',
 };
 
 

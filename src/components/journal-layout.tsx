@@ -461,13 +461,13 @@ export function JournalLayout() {
           </div>
         </header>
         <main className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className={cn('h-full flex flex-col', viewMode === 'preview' ? 'hidden' : 'block', viewMode === 'editor' ? 'md:col-span-2' : '')}>
+          <div className={cn('h-full grid grid-rows-[auto_1fr]', viewMode === 'preview' ? 'hidden' : 'grid', viewMode === 'editor' ? 'md:col-span-2' : '')}>
             <MarkdownToolbar 
               textareaRef={textareaRef}
               content={entry.content}
               onContentChange={handleContentChange}
             />
-            <div className="relative flex-1">
+            <div className="relative overflow-hidden">
               <Textarea
                 ref={textareaRef}
                 value={entry.content}

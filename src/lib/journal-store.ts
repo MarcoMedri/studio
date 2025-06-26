@@ -1,4 +1,4 @@
-import { format, parse, isValid } from 'date-fns';
+import { format, parse, isValid, startOfDay } from 'date-fns';
 
 const DATE_FORMAT = 'yyyy-MM-dd';
 const STORAGE_KEY = 'mark-journal-notes-v2'; // Key updated for new data structure
@@ -84,6 +84,27 @@ export function deleteNote(date: Date) {
     delete notes[dateKey];
     saveNotesToStorage(notes);
   }
+}
+
+export function deleteNotesByDateRange(startDate: Date, endDate: Date) {
+  const notes = getNotesFromStorage();
+  const start = startOfDay(startDate);
+  const end = startOfDay(endDate);
+
+  const keysToDelete = Object.keys(notes).filter(dateKey => {
+    const noteDate = parse(dateKey, DATE_FORMAT, new Date());
+    return isValid(noteDate) && noteDate >= start && noteDate <= end;
+  });
+
+  keysToDelete.forEach(key => {
+    delete notes[key];
+  });
+  
+  saveNotesToStorage(notes);
+}
+
+export function deleteAllNotes() {
+    saveNotesToStorage({});
 }
 
 export function getDatesWithNotes(): Date[] {

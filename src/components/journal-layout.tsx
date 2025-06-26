@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, subDays, subYears } from 'date-fns';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { 
@@ -44,9 +44,24 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Skeleton } from './ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
+type PendingDeletion = {
+  type: 'range' | 'all';
+  range?: { start: Date; end: Date };
+  label: string;
+};
 
 const checklistItems = [
     {id: 'alimentazione', label: 'Alimentazione', icon: <Apple className="h-4 w-4 text-muted-foreground" />},
@@ -80,6 +95,8 @@ export function JournalLayout() {
   const { setTheme } = useTheme();
   const [colorTheme, setColorTheme] = useState('blue');
   const [isMounted, setIsMounted] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -237,6 +254,25 @@ export function JournalLayout() {
     }
     toast({ title: 'Nota cancellata' });
   };
+  
+  const handleConfirmDelete = () => {
+    if (!pendingDeletion) return;
+
+    if (pendingDeletion.type === 'range' && pendingDeletion.range) {
+      store.deleteNotesByDateRange(pendingDeletion.range.start, pendingDeletion.range.end);
+    } else if (pendingDeletion.type === 'all') {
+      store.deleteAllNotes();
+    }
+
+    setDatesWithNotes(store.getDatesWithNotes());
+    if (selectedDate) {
+        const loadedEntry = store.getNote(selectedDate);
+        setEntry(loadedEntry);
+    }
+    
+    toast({ title: 'Note eliminate', description: `Le note selezionate sono state eliminate.` });
+    setPendingDeletion(null);
+  };
 
   const calendarModifiers = useMemo(() => ({
       ...datesWithNotes.length > 0 && { hasNote: datesWithNotes },
@@ -345,150 +381,205 @@ export function JournalLayout() {
   );
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      {!isMobile && (
-        <aside className="w-80 border-r flex-shrink-0">
-          {calendar}
-        </aside>
-      )}
+    <>
+      <div className="flex h-screen bg-background text-foreground">
+        {!isMobile && (
+          <aside className="w-80 border-r flex-shrink-0">
+            {calendar}
+          </aside>
+        )}
 
-      <div className="flex flex-col flex-1">
-        <header className="flex items-center justify-between p-2 border-b h-16 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            {isMobile && (
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-80">
-                  {calendar}
-                </SheetContent>
-              </Sheet>
-            )}
-            <Button variant="ghost" size="sm" className="hidden md:flex items-center">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              <span className="text-lg">{isMounted && selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-1 bg-muted p-1 rounded-md">
-              <Button variant={viewMode === 'editor' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('editor')} title="Editor">
-                <Code className="h-4 w-4" />
-              </Button>
-              <Button variant={viewMode === 'split' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('split')} title="Split View">
-                <Split className="h-4 w-4" />
-              </Button>
-              <Button variant={viewMode === 'preview' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('preview')} title="Preview">
-                <BookOpen className="h-4 w-4" />
+        <div className="flex flex-col flex-1">
+          <header className="flex items-center justify-between p-2 border-b h-16 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              {isMobile && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="p-0 w-80">
+                    {calendar}
+                  </SheetContent>
+                </Sheet>
+              )}
+              <Button variant="ghost" size="sm" className="hidden md:flex items-center">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                <span className="text-lg">{isMounted && selectedDate ? format(selectedDate, 'PPP') : 'Loading date...'}</span>
               </Button>
             </div>
-            <AnalyzeButton content={entry.content} />
-            <Link href="/stats" passHref>
-              <Button variant="outline" size="icon" aria-label="Statistics">
-                <BarChart className="h-4 w-4" />
-              </Button>
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Settings className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1 bg-muted p-1 rounded-md">
+                <Button variant={viewMode === 'editor' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('editor')} title="Editor">
+                  <Code className="h-4 w-4" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Impostazioni</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleImportClick}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  <span>Importa Nota</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  <span>Esporta Nota</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <SunMoon className="mr-2 h-4 w-4" />
-                    <span>Tema</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setTheme('light')}>Chiaro</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme('dark')}>Scuro</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme('system')}>Sistema</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Palette className="mr-2 h-4 w-4" />
-                    <span>Colore Tema</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      {colorThemes.map(theme => (
-                        <DropdownMenuItem key={theme.name} onClick={() => setColorTheme(theme.name)}>
-                           <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview))` }} />
-                          {theme.label}
+                <Button variant={viewMode === 'split' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('split')} title="Split View">
+                  <Split className="h-4 w-4" />
+                </Button>
+                <Button variant={viewMode === 'preview' ? 'secondary' : 'ghost'} size="icon" onClick={() => setViewMode('preview')} title="Preview">
+                  <BookOpen className="h-4 w-4" />
+                </Button>
+              </div>
+              <AnalyzeButton content={entry.content} />
+              <Link href="/stats" passHref>
+                <Button variant="outline" size="icon" aria-label="Statistics">
+                  <BarChart className="h-4 w-4" />
+                </Button>
+              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Impostazioni</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleImportClick}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    <span>Importa Nota</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExport}>
+                    <Download className="mr-2 h-4 w-4" />
+                    <span>Esporta Nota</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <SunMoon className="mr-2 h-4 w-4" />
+                      <span>Tema</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem onClick={() => setTheme('light')}>Chiaro</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('dark')}>Scuro</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setTheme('system')}>Sistema</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Palette className="mr-2 h-4 w-4" />
+                      <span>Colore Tema</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        {colorThemes.map(theme => (
+                          <DropdownMenuItem key={theme.name} onClick={() => setColorTheme(theme.name)}>
+                            <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: `hsl(var(--${theme.name}-preview))` }} />
+                            {theme.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Languages className="mr-2 h-4 w-4" />
+                      <span>Lingua</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem>English</DropdownMenuItem>
+                        <DropdownMenuItem>Italiano</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      <span>Formato Data</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem>dd-MM-yyyy</DropdownMenuItem>
+                        <DropdownMenuItem>MM-dd-yyyy</DropdownMenuItem>
+                        <DropdownMenuItem>yyyy-MM-dd</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                   <DropdownMenuSeparator />
+                   <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Cancellazione Massiva</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem className="text-destructive" onClick={() => {
+                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 7), end: new Date() }, label: 'delle ultime 7 giorni' });
+                          setIsDeleteDialogOpen(true);
+                        }}>
+                          <span>Ultimi 7 giorni</span>
                         </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Languages className="mr-2 h-4 w-4" />
-                    <span>Lingua</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem>English</DropdownMenuItem>
-                      <DropdownMenuItem>Italiano</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    <span>Formato Data</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem>dd-MM-yyyy</DropdownMenuItem>
-                      <DropdownMenuItem>MM-dd-yyyy</DropdownMenuItem>
-                      <DropdownMenuItem>yyyy-MM-dd</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-          <div className={cn('h-full grid grid-rows-[auto_1fr]', viewMode === 'preview' ? 'hidden' : 'grid', viewMode === 'editor' ? 'md:col-span-2' : '')}>
-            <MarkdownToolbar 
-              textareaRef={textareaRef}
-              content={entry.content}
-              onContentChange={handleContentChange}
-            />
-            <div className="relative overflow-hidden">
-              <Textarea
-                ref={textareaRef}
-                value={entry.content}
-                onChange={(e) => handleContentChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Start writing your journal entry here..."
-                className="absolute inset-0 h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
-              />
+                         <DropdownMenuItem className="text-destructive" onClick={() => {
+                          setPendingDeletion({ type: 'range', range: { start: subDays(new Date(), 30), end: new Date() }, label: 'degli ultimi 30 giorni' });
+                          setIsDeleteDialogOpen(true);
+                        }}>
+                          <span>Ultimi 30 giorni</span>
+                        </DropdownMenuItem>
+                         <DropdownMenuItem className="text-destructive" onClick={() => {
+                          setPendingDeletion({ type: 'range', range: { start: subYears(new Date(), 1), end: new Date() }, label: 'dell\'ultimo anno' });
+                          setIsDeleteDialogOpen(true);
+                        }}>
+                          <span>Ultimo anno</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={() => {
+                          setPendingDeletion({ type: 'all', label: 'tutte' });
+                          setIsDeleteDialogOpen(true);
+                        }}>
+                          <span>Tutte le note</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </div>
-          <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'md:col-span-2' : '')}>
-            <MarkdownPreview content={entry.content} />
-          </div>
-        </main>
+          </header>
+          <main className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+            <div className={cn('h-full grid grid-rows-[auto_1fr]', viewMode === 'preview' ? 'hidden' : 'grid', viewMode === 'editor' ? 'md:col-span-2' : '')}>
+              <MarkdownToolbar 
+                textareaRef={textareaRef}
+                content={entry.content}
+                onContentChange={handleContentChange}
+              />
+              <div className="relative overflow-hidden">
+                <Textarea
+                  ref={textareaRef}
+                  value={entry.content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Start writing your journal entry here..."
+                  className="absolute inset-0 h-full w-full resize-none border-0 rounded-none focus-visible:ring-0 p-8 text-base font-code bg-transparent"
+                />
+              </div>
+            </div>
+            <div className={cn('h-full overflow-y-auto border-l', viewMode === 'editor' ? 'hidden' : 'block', viewMode === 'preview' ? 'md:col-span-2' : '')}>
+              <MarkdownPreview content={entry.content} />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa azione è irreversibile. Eliminerà definitivamente {pendingDeletion?.label} le note.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeletion(null)}>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              Conferma
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -5,7 +5,7 @@ import { format, subDays, subYears } from 'date-fns';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { 
-  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript, BarChart
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, BarChart
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';

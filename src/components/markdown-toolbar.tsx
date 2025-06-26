@@ -1,15 +1,18 @@
 'use client';
 
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Superscript, Subscript } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, Heading4, Smile } from 'lucide-react';
 import { Button } from './ui/button';
 import type { RefObject } from 'react';
 import { Separator } from './ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface MarkdownToolbarProps {
   textareaRef: RefObject<HTMLTextAreaElement>;
   content: string;
   onContentChange: (newContent: string) => void;
 }
+
+const emojis = ['😊', '😂', '😍', '🤔', '😢', '😠', '👍', '👎', '❤️', '🔥', '🎉', '✨', '💡', '🙏', '💯', '🤣', '🤩', '🥳'];
 
 export function MarkdownToolbar({ textareaRef, content, onContentChange }: MarkdownToolbarProps) {
   const insertText = (before: string, after: string = '') => {
@@ -125,12 +128,28 @@ export function MarkdownToolbar({ textareaRef, content, onContentChange }: Markd
         <Heading4 className="h-4 w-4" />
       </Button>
       <Separator orientation="vertical" className="h-6" />
-      <Button variant="ghost" size="icon" onClick={() => insertText('<sup>', '</sup>')} title="Superscript">
-        <Superscript className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="icon" onClick={() => insertText('<sub>', '</sub>')} title="Subscript">
-        <Subscript className="h-4 w-4" />
-      </Button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="hidden md:inline-flex" title="Insert Emoji">
+            <Smile className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2">
+            <div className="grid grid-cols-6 gap-1">
+                {emojis.map((emoji) => (
+                    <Button
+                        key={emoji}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => insertText(emoji)}
+                        className="text-lg"
+                    >
+                        {emoji}
+                    </Button>
+                ))}
+            </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

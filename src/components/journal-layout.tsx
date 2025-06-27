@@ -5,7 +5,7 @@ import { format, subDays, subYears } from 'date-fns';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { 
-  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, BarChart
+  Calendar as CalendarIcon, Code, BookOpen, Split, Download, Upload, Menu, Settings, SunMoon, Languages, CalendarDays, Apple, BedDouble, Dumbbell, GraduationCap, Palette, Trash2, BarChart, LogOut
 } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as store from '@/lib/journal-store';
@@ -55,6 +55,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTranslation } from '@/lib/i18n';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 
 
 type ViewMode = 'split' | 'editor' | 'preview';
@@ -99,6 +101,15 @@ export function JournalLayout() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
   const { t, language, setLanguage, dateLocale } = useTranslation();
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -546,6 +557,11 @@ export function JournalLayout() {
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t('settings.logout')}</span>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

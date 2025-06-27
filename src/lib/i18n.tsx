@@ -24,6 +24,7 @@ const translations = {
       last30days: 'Ultimi 30 giorni',
       lastYear: 'Ultimo anno',
       allNotes: 'Tutte le note',
+      logout: 'Esci',
     },
     deleteDialog: {
         title: 'Sei sicuro?',
@@ -117,6 +118,7 @@ const translations = {
       last30days: 'Last 30 days',
       lastYear: 'Last year',
       allNotes: 'All notes',
+      logout: 'Logout',
     },
     deleteDialog: {
         title: 'Are you sure?',
